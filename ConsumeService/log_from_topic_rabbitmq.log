@@ -1,0 +1,10 @@
+
+ ! [NOTE] You start consume with exchange: [topic.logs] queue name [amq.gen-9Rydfh4WGaT79x5mNWMP4g] with binding keys   
+ !        [cron.*]                                                                                                      
+
+ [OK] Waiting for logs. To exit press CTRL+C\n                                                                          
+
+ [OK] cron.error php Exception                                                                                          
+
+ [OK] cron.notice php Exception                                                                                         
+
