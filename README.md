@@ -13,5 +13,5 @@ ConsumeService command
 - rabbitmq:topic:consume
 - rpc:server
 
-Сервер c raabbitmq поставляется отдельно
+Сервер c rabbitmq поставляется отдельно
 
