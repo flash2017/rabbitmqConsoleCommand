@@ -2,7 +2,7 @@
 
 namespace App\Command;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\Services\Amqp\Service;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,11 +13,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'declare:exchange',
-    description: 'Add a short description for your command',
+    description: 'задекларировать обменник',
 )]
 class DeclareExchangeCommand extends Command
 {
-    public function __construct()
+    public function __construct(private Service $amqpWrap)
     {
         parent::__construct();
     }
@@ -45,7 +45,7 @@ class DeclareExchangeCommand extends Command
 
         $io->note("You passed an argument $commandData");
 
-        $Connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $Connection = $this->amqpWrap->getConnection();
         $Channel = $Connection->channel();
         $result = $Channel->exchange_declare(
             $name,

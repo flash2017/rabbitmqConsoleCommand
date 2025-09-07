@@ -2,8 +2,7 @@
 
 namespace App\Command;
 
-use AMQPConnection;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\Services\Amqp\Service;
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -15,11 +14,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'rabbitmq:fanout:message',
-    description: 'Add a short description for your command',
+    description: 'добавить в обменник сообщение fanout',
 )]
 class RabbitmqFanoutMessageCommand extends Command
 {
-    public function __construct()
+    public function __construct(private Service $amqpService)
     {
         parent::__construct();
     }
@@ -41,7 +40,7 @@ class RabbitmqFanoutMessageCommand extends Command
         $io->note(sprintf('You passed an argument: exchange %s message %s', $exchange, $message));
 
         $msgAmqp = new AMQPMessage($message);
-        $Connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $Connection = $this->amqpService->getConnection();
         $Channel = $Connection->channel();
 
         $Channel->basic_publish($msgAmqp, $exchange);

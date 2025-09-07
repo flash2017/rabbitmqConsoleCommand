@@ -2,16 +2,15 @@
 
 namespace App\Command;
 
-use AMQPConnection;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use App\Services\Amqp\Service;
 
 #[AsCommand(
     name: 'rpc:client',
@@ -24,11 +23,15 @@ class RpcClientCommand extends Command
     private $callbackQueue;
     private $response;
     private $correlationId;
-    public function __construct()
+
+    /**
+     * @param Service $amqpService
+     */
+    public function __construct(private Service $amqpService)
     {
         parent::__construct();
 
-        $this->Connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $this->Connection = $this->amqpService->getConnection();
         $this->Channel = $this->Connection->channel();
         list($this->callbackQueue,,) = $this->Channel->queue_declare('', false, false, true, false);
         $this->Channel->basic_consume($this->callbackQueue,
@@ -40,11 +43,18 @@ class RpcClientCommand extends Command
             [$this, 'onResponse']);
     }
 
+    /**
+     * @return void
+     */
     protected function configure(): void
     {
         $this->addArgument('n', InputArgument::REQUIRED, 'number for fibonachi sum function');
     }
 
+    /**
+     * @param AMQPMessage $response
+     * @return void
+     */
     public function onResponse(AMQPMessage $response): void
     {
         if ($response->get('correlation_id') === $this->correlationId) {
@@ -52,6 +62,10 @@ class RpcClientCommand extends Command
         }
     }
 
+    /**
+     * @param int $n
+     * @return int
+     */
     public function call(int $n)
     {
 
@@ -71,6 +85,11 @@ class RpcClientCommand extends Command
         return intval($this->response);
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

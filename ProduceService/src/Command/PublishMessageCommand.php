@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Services\Amqp\Service;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -14,11 +15,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'publish:message',
-    description: 'Add a short description for your command',
+    description: 'публикация сообщений',
 )]
 class PublishMessageCommand extends Command
 {
-    public function __construct()
+    public function __construct(private Service $amqpService)
     {
         parent::__construct();
     }
@@ -42,13 +43,13 @@ class PublishMessageCommand extends Command
         $dataCommand = sprintf('You publish message [%s] to exchange [%s] rotingKey [%s]', $message, $exchange, $routingKey ?? '');
         $io->note($dataCommand);
 
-        $Connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+
         $amqpMessage = new AMQPMessage($message);
-        $Channel = $Connection->channel();
+        $Channel = $this->amqpService->getConnection()->channel();
         $Channel->basic_publish($amqpMessage, $exchange, $routingKey);
 
         $Channel->close();
-        $Connection->close();
+        $this->amqpService->getConnection()->close();
 
         $io->success('You published message success! Pass --help to see your options.');
 

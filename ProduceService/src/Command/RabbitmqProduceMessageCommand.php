@@ -2,37 +2,32 @@
 
 namespace App\Command;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Serializer\SerializerInterface;
+use App\Services\Amqp\Service;
 
 #[AsCommand(
     name: 'rabbitmq:produce:message',
-    description: 'Add a short description for your command',
+    description: 'тест fanout ',
 )]
 class RabbitmqProduceMessageCommand extends Command
 {
-    private SerializerInterface $serializer;
-
-    public function __construct(SerializerInterface $serializer)
+    public function __construct(private SerializerInterface $serializer, private Service $amqpService)
     {
         parent::__construct();
 
-        $this->serializer = $serializer;
     }
 
     protected function configure(): void
     {
         $this
-            ->addArgument('body', InputArgument::REQUIRED|InputArgument::IS_ARRAY, 'Argument description')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+            ->addArgument('body', InputArgument::REQUIRED|InputArgument::IS_ARRAY, 'сообщение')
         ;
     }
 
@@ -41,13 +36,9 @@ class RabbitmqProduceMessageCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $body = $input->getArgument('body');
 
-        if ($input->getOption('option1')) {
-            // ...
-        }
-
         $jsonContent = $this->serializer->serialize($body, 'json');
 
-        $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $connection = $this->amqpService->getConnection();
         $channel = $connection->channel();
 
         $channel->exchange_declare('symfony_fanout', 'fanout', false, true, false);

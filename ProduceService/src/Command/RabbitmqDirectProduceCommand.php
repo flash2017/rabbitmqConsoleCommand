@@ -2,7 +2,7 @@
 
 namespace App\Command;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\Services\Amqp\Service;
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -13,21 +13,20 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'rabbitmq:direct:produce',
-    description: 'Add a short description for your command',
+    description: 'публикация сообщения в symfony_direct',
 )]
 class RabbitmqDirectProduceCommand extends Command
 {
-    public function __construct()
+    public function __construct(private Service $amqpService)
     {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->addArgument('message', InputArgument::REQUIRED, 'Argument description');
-        $this->addArgument('routingKey', InputArgument::REQUIRED, 'Argument description');
+        $this->addArgument('message', InputArgument::REQUIRED, 'сообщение');
+        $this->addArgument('routingKey', InputArgument::REQUIRED, 'routingKey');
     }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -38,7 +37,7 @@ class RabbitmqDirectProduceCommand extends Command
             $io->note(sprintf('You passed an argument: %s', $routingKey));
         }
 
-        $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $connection = $this->amqpService->getConnection();
         $channel = $connection->channel();
         $channel->basic_publish(new AMQPMessage(
             $message,

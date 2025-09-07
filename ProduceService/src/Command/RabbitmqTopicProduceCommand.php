@@ -2,15 +2,14 @@
 
 namespace App\Command;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use App\Services\Amqp\Service;
 
 #[AsCommand(
     name: 'rabbitmq:topic:produce',
@@ -18,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class RabbitmqTopicProduceCommand extends Command
 {
-    public function __construct()
+    public function __construct(private Service $amqpService)
     {
         parent::__construct();
     }
@@ -26,8 +25,8 @@ class RabbitmqTopicProduceCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('routingKey',InputArgument::REQUIRED, 'Option description')
-            ->addArgument('message', InputArgument::REQUIRED, 'Argument description')
+            ->addArgument('routingKey',InputArgument::REQUIRED, 'routingKey')
+            ->addArgument('message', InputArgument::REQUIRED, 'message')
         ;
     }
 
@@ -39,7 +38,7 @@ class RabbitmqTopicProduceCommand extends Command
 
         $io->note(sprintf('You produce message "%s" topic %s to exchange error', $message, $routingKey));
 
-        $Connections = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $Connections = $this->amqpService->getConnections();
         $Channel = $Connections->channel();
         $message = new AMQPMessage($message);
         $Channel->basic_publish($message, 'error', $routingKey);
@@ -47,7 +46,7 @@ class RabbitmqTopicProduceCommand extends Command
         $Channel->close();
         $Connections->close();
 
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $io->success('message sended to ');
 
         return Command::SUCCESS;
     }
